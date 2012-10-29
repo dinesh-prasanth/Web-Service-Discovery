@@ -7,18 +7,6 @@
 #include "config.cpp"
 using namespace std;
 
-class operation
-{
-	vector<string> annotations;
-};
-
-class service
-{
-	int id;
-	operation input;
-	operation output;
-};
-
 int main()
 {
 	string line;
@@ -38,12 +26,11 @@ int main()
 	destfile.open("serviceLibrary.txt",ios::out);
 	int word_pos;	// position of the word from source
 	int source_size = source.size() - 1;
-	operation op;
 	string annotations;
 	srand((unsigned)time(0));
 	if(destfile.is_open())
 	{
-		for(int i=0;i<no_services;i++)
+		for(int i=0;i<no_ops;i++)
 		{
 			for(int j=0;j<ann_per_inf;j++)
 			{

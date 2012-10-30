@@ -1,2 +1,23 @@
 Project on improving match making algorithm in semantic web service discovery (SOA)
-Guide : Prof.Santhana Vijayan
+
+About :
+
+generateServiceLibrary.cpp
+
+Creates a service library in serviceLibrary.txt with its operation interfaces annotated randomly from the set of raw words in source.txt
+
+matchmake.cpp
+
+Gets in input and output annotations to be matched and results a best matched service from the service library generated using following algorithms :
+(i)	Paolucci Algorithm
+(ii)	BruteForce Combinatorial Algorithm
+(iii)	Assignment Algorithm
+
+Prerequisites :
+g++ 4.4.3 compiler
+WordNet 3.0
+WordNet::QueryData
+Text::Similarity
+WordNet::Similarity
+
+Replicate or modify to use under your own risk.

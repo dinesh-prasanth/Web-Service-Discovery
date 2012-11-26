@@ -6,6 +6,7 @@
 #include"config.cpp"
 #include"fstream"
 #include"algorithm"
+#include<time.h>
 using namespace std;
 
 vector< vector<int> > perm_list;
@@ -79,6 +80,7 @@ vector<matchedOp> SortMatches(vector<matchedOp> matched_ops)
 int main()
 {
 	int opt,pos;
+	time_t ti,tf;
 	string line,in_line,out_line;
 	string serviceData[2];
 	cout<<"Enter Algorithm:\n1.Paolucci Algorithm\n2.BruteForce Algorithm\n3.Assignment Algorithm\nChoice : ";
@@ -128,6 +130,7 @@ int main()
 	// COMMAND LINE CALL similarity.pl --type WordNet::Similarity::lin tiger#n cat#n > tempSim.txt
 	if(opt==1)
 	{
+		ti = time(0);
 		string sim_str,sim_line;
 		vector <matchedOp> matched_ops;
 		matchedOp tempMatch;
@@ -237,6 +240,7 @@ int main()
 			}
 			sum_in=0;
 		}
+		cout<<"\nFINAL SORTING..\n";
 		matched_ops = SortMatches(matched_ops);
 		cout<<"\n";
 		int match_size = matched_ops.size();
@@ -255,10 +259,13 @@ int main()
 			}
 			cout<<"\n\n";
 		}
+		tf = time(0);
+		cout<<tf-ti<<"secs to Complete!\n";
 		
 	}
 	else if(opt==2)	// BRUTE FORCE ALGORITHM
 	{
+		ti = time(0);
 		string sim_str,sim_line;
 		vector <matchedOp> matched_ops;
 		matchedOp tempMatch;
@@ -270,21 +277,40 @@ int main()
 		vector<string> tempList;
 		vector<string> test_operation;
 		int op_size = serviceLibrary.size();
-		permutations(query_in_size);
+		permutations(query_in_size);	// hard coded for query_in_size = query_out_size; change if necessary;
+		vector< vector<string> > query_in_comb;
+		vector< vector<string> > query_out_comb;
+		vector<string> query_in_comb_comp;
+		vector<string> query_out_comb_comp;
+		int perm_itr;
+		int perm_length = perm_list.size();
+		for(perm_itr=0;perm_itr<perm_length;perm_itr++)
+		{
+			for(int tmp_itr=0;tmp_itr<query_in_size;tmp_itr++)
+			{
+				query_in_comb_comp.push_back(query_in[perm_list[perm_itr][tmp_itr]]);
+				query_out_comb_comp.push_back(query_out[perm_list[perm_itr][tmp_itr]]);
+			}
+			query_in_comb.push_back(query_in_comb_comp);
+			query_out_comb.push_back(query_out_comb_comp);
+			query_in_comb_comp.clear();
+			query_out_comb_comp.clear();
+		}
 		for(int i=0;i<op_size;i++)	// foreach operation
 		{
 			int j=0;
 			sum_in=0;
-			int perm_length = perm_list.size();
-			int perm_itr = 0;
+			perm_itr = 0;
+			cout<<"Input Interface\n";
 			while(perm_itr<perm_length)
 			{
-			cout<<perm_itr+1<<" permute\n";
+			cout<<perm_itr+1<<" permutation : ";
 			tempList.clear();
-			for(int tmp_itr=0;tmp_itr<ann_per_inf;tmp_itr++){
-				tempList.push_back(query_in[perm_list[perm_itr][tmp_itr]]);
-				cout<<query_in[perm_list[perm_itr][tmp_itr]]<<" ";
-				}cout<<"\n";
+			tempList = query_in_comb[perm_itr];
+			for(int tmp_itr=0;tmp_itr<query_in_size;tmp_itr++)
+			{
+				cout<<query_in_comb[perm_itr][tmp_itr]<<" ";
+			}cout<<"\n";
 			j=0;
 			test_operation = serviceLibrary[i].input;
 			for(int j=0;j<query_in_size;j++)	// foreach target input annotation
@@ -338,25 +364,26 @@ int main()
 			test_operation.erase(test_operation.begin()+sim_max_index);
 			temp_sim_list.clear();
 			sum_in += sim_max;
-			cout<<sim_max<<" max\n";
+			cout<<sim_max<<" - max of comparisons\n";
 			}
 				
 			sum_in_list.push_back(sum_in);
 			sum_in = 0;
 			perm_itr++;
 			}
-			
+			cout<<"Output Interface\n";
 			j = 0;
 			sum_out = 0;
 			perm_itr=0;
 			while(perm_itr<perm_length)
 			{
-			cout<<perm_itr+1<<" permute\n";
+			cout<<perm_itr+1<<" permutation : ";
 			tempList.clear();
-			for(int tmp_itr=0;tmp_itr<ann_per_inf;tmp_itr++){
-				tempList.push_back(query_out[perm_list[perm_itr][tmp_itr]]);
-				cout<<query_out[perm_list[perm_itr][tmp_itr]]<<" ";
-				}cout<<"\n";
+			tempList = query_out_comb[perm_itr];
+			for(int tmp_itr=0;tmp_itr<query_out_size;tmp_itr++)
+			{
+				cout<<query_out_comb[perm_itr][tmp_itr]<<" ";
+			}cout<<"\n";
 			test_operation = serviceLibrary[i].output;
 			for(int j=0;j<query_out_size;j++)	// foreach target input annotation
 			{
@@ -411,7 +438,7 @@ int main()
 			test_operation.erase(test_operation.begin()+sim_max_index);
 			temp_sim_list.clear();
 			sum_out += sim_max;
-			cout<<sim_max<<" max\n";
+			cout<<sim_max<<" - max of comparisons\n";
 			}
 			sum_out_list.push_back(sum_out);
 			sum_out=0;
@@ -420,9 +447,9 @@ int main()
 			
 			sum_in = *max_element(sum_in_list.begin(),sum_in_list.end());
 			sum_out = *max_element(sum_out_list.begin(),sum_out_list.end());
-			cout<<"\n"<<sum_in<<" "<<sum_out<<" "<<query_out_size<<" "<<ann_per_inf<<" ";
+			//cout<<"\n"<<sum_in<<" "<<sum_out<<" "<<query_out_size<<" "<<ann_per_inf<<" ";
 			sum_in = (sum_in*sum_out)/(query_out_size*ann_per_inf);
-			cout<<sum_in<<" match!\n";
+			cout<<sum_in<<" match! "<<i+1<<"/"<<op_size<<" percent completed\n";
 			if(sum_in > threshold)// check for threshold and push to list to sort
 			{
 				tempMatch.id = i;
@@ -433,6 +460,7 @@ int main()
 			sum_out_list.clear();
 			sum_in = 0;sum_out = 0;
 		}
+		cout<<"\nFINAL SORTING..\n";
 		perm_list.clear();
 		matched_ops = SortMatches(matched_ops);
 		cout<<"\n";
@@ -452,6 +480,8 @@ int main()
 			}
 			cout<<"\n\n";
 		}
+		tf = time(0);
+		cout<<tf-ti<<"secs to Complete!\n";
 	}
 	else
 	{

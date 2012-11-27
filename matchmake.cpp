@@ -3,6 +3,7 @@
 #include<string>
 #include<unistd.h>
 #include<stdlib.h>
+#include<sstream>
 #include"config.cpp"
 #include"fstream"
 #include"algorithm"
@@ -447,7 +448,22 @@ int main()
 			
 			sum_in = *max_element(sum_in_list.begin(),sum_in_list.end());
 			sum_out = *max_element(sum_out_list.begin(),sum_out_list.end());
-			//cout<<"\n"<<sum_in<<" "<<sum_out<<" "<<query_out_size<<" "<<ann_per_inf<<" ";
+			
+			// TEST PURPOSE check points
+			/*int sum_in_index=0;
+			for(int m=0;m<sum_in_list.size();m++)
+			{
+				if(sum_in_list[m]==sum_in)
+				{sum_in_index=m;}
+			}
+			int sum_out_index=0;
+			for(int m=0;m<sum_out_list.size();m++)
+			{
+				if(sum_out_list[m]==sum_out)
+				{sum_out_index=m;}
+			}
+			
+			cout<<"\n"<<sum_in_index<<":"<<sum_in<<" "<<sum_out_index<<":"<<sum_out<<" "<<query_out_size<<" "<<ann_per_inf<<" ";*/
 			sum_in = (sum_in*sum_out)/(query_out_size*ann_per_inf);
 			cout<<sum_in<<" match! "<<i+1<<"/"<<op_size<<" percent completed\n";
 			if(sum_in > threshold)// check for threshold and push to list to sort
@@ -483,9 +499,182 @@ int main()
 		tf = time(0);
 		cout<<tf-ti<<"secs to Complete!\n";
 	}
+	else if(opt==3)
+	{
+		ti = time(0);
+		string sim_str,sim_line;
+		vector <matchedOp> matched_ops;
+		matchedOp tempMatch;
+		double sim_val,sum_in,sum_out;
+		string hung_run;
+		int op_size = serviceLibrary.size();
+		vector<int> hung_matrix;
+		for(int i=0;i<op_size;i++)
+		{
+			int j=0;
+			while(j<query_in_size)
+			{
+				for(int k=0;k<ann_per_inf;k++)
+				{
+					string sim_str = "similarity.pl --type WordNet::Similarity::lin "+query_in[j]+"#n "+serviceLibrary[i].input[k]+"#n > tempSim.txt";
+					char *sim_str_c = new char[sim_str.size()+1];
+					int l;
+					for(l=0;l<sim_str.size();l++)
+					{
+						sim_str_c[l]=sim_str[l];
+					}
+					sim_str_c[l]='\0';
+					system(sim_str_c);
+					cout<<"\n<"<<query_in[j]<<" "<<serviceLibrary[i].input[k]<<">\n";
+					ifstream simFile;
+					simFile.open("tempSim.txt");
+					if(simFile.is_open())
+					{
+						getline(simFile,sim_line);
+						if(sim_line.find("  ")<sim_line.size())
+						{
+							sim_line = sim_line.substr(sim_line.find("  ")+2);
+							sim_line = sim_line.substr(sim_line.find("  ")+2);
+							char *sim_line_c = new char[sim_line.size()];
+							for(l=0;l<sim_line.size();l++)
+							{
+								sim_line_c[l]=sim_line[l];
+							}
+							sim_line_c[l]='\0';
+							sim_val = (double)atof(sim_line_c);
+						}
+						else
+							sim_val=0;
+						hung_matrix.push_back((int)(sim_val*10000));	// taking as 4digit int for Hungarian algo
+					}
+					simFile.close();
+				}
+				j++;
+			}
+			string hung_value_in;
+			ostringstream oss_in;
+			oss_in << "  ./hungarian/test "<<query_in_size<<" "<<ann_per_inf;
+			
+			int hung_mat_size = hung_matrix.size();
+			for(int a=0;a<hung_mat_size;a++)
+			{
+				oss_in<<" "<<hung_matrix[a];
+			}
+			hung_matrix.clear();
+			oss_in<<" > tempHung.txt";
+			hung_run = oss_in.str();
+			system(&(hung_run[0]));
+			ifstream simFile;
+			simFile.open("tempHung.txt");
+			if(simFile.is_open())
+			{
+				getline(simFile,hung_value_in);
+			}
+			simFile.close();
+			sum_in = (double)(atof(&hung_value_in[0])/10000);
+			
+			j = 0;
+			sum_out = 0;
+			
+			while(j<query_out_size)
+			{
+				for(int k=0;k<ann_per_inf;k++)
+				{
+					string sim_str = "similarity.pl --type WordNet::Similarity::lin "+query_out[j]+"#n "+serviceLibrary[i].output[k]+"#n > tempSim.txt";
+					char *sim_str_c = new char[sim_str.size()+1];
+					int l;
+					for(l=0;l<sim_str.size();l++)
+					{
+						sim_str_c[l]=sim_str[l];
+					}
+					sim_str_c[l]='\0';
+					system(sim_str_c);
+					cout<<"\n<"<<query_out[j]<<" "<<serviceLibrary[i].output[k]<<">\n";
+					ifstream simFile;
+					simFile.open("tempSim.txt");
+					if(simFile.is_open())
+					{
+						getline(simFile,sim_line);
+						if(sim_line.find("  ")<sim_line.size())
+						{
+							sim_line = sim_line.substr(sim_line.find("  ")+2);
+							sim_line = sim_line.substr(sim_line.find("  ")+2);
+							char *sim_line_c = new char[sim_line.size()];
+							for(l=0;l<sim_line.size();l++)
+							{
+								sim_line_c[l]=sim_line[l];
+							}
+							sim_line_c[l]='\0';
+							sim_val = (double)atof(sim_line_c);
+						}
+						else
+							sim_val=0;
+						hung_matrix.push_back((int)(sim_val*10000));
+					}
+					else
+						cout<<"\nUnexpected file open error\n";
+					simFile.close();
+				}
+				j++;
+			}
+			string hung_value_out;
+			ostringstream oss_out;
+			oss_out << "  ./hungarian/test "<<query_out_size<<" "<<ann_per_inf;
+			
+			hung_mat_size = hung_matrix.size();
+			for(int a=0;a<hung_mat_size;a++)
+			{
+				oss_out<<" "<<hung_matrix[a];
+			}
+			hung_matrix.clear();
+			oss_out<<" > tempHung.txt";
+			hung_run = oss_out.str();
+			system(&(hung_run[0]));
+			simFile.open("tempHung.txt");
+			if(simFile.is_open())
+			{
+				getline(simFile,hung_value_out);
+				//cout<<atof(&hung_value_out[0])<<"\n";
+			}
+			simFile.close();
+			sum_out = (double)(atof(&hung_value_out[0])/10000);
+			//cout<<"\n"<<sum_in<<" "<<sum_out<<" "<<query_out_size<<ann_per_inf<<" ";
+			sum_in = (sum_in*sum_out)/(query_out_size*ann_per_inf);
+			cout<<sum_in<<" match!\n";
+			if(sum_in > threshold)// check for threshold and push to list to sort
+			{
+				tempMatch.id = i;
+				tempMatch.sum = sum_in;
+				matched_ops.push_back(tempMatch);
+			}
+			sum_in=0;
+		}
+		cout<<"\nFINAL SORTING..\n";
+		matched_ops = SortMatches(matched_ops);
+		cout<<"\n";
+		int match_size = matched_ops.size();
+		for(int i=0;((i<match_size)&&(i<no_results));i++)
+		{
+			cout<<"Operation ID : "<<matched_ops[i].id<<" Match precision : "<<matched_ops[i].sum<<"\n";
+			cout<<"Input : ";
+			for(int j=0;j<ann_per_inf;j++)
+			{
+				cout<<serviceLibrary[matched_ops[i].id].input[j]<<" ";
+			}
+			cout<<"Output : ";
+			for(int j=0;j<ann_per_inf;j++)
+			{
+				cout<<serviceLibrary[matched_ops[i].id].output[j]<<" ";
+			}
+			cout<<"\n\n";
+		}
+		tf = time(0);
+		cout<<tf-ti<<"secs to Complete!\n";
+		
+	}
 	else
 	{
-		cout<<"Enter again : ";
+		cout<<"Enter choice again : ";
 		goto l;
 	}
 }
